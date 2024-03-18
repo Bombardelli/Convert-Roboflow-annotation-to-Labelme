@@ -1,0 +1,61 @@
+import json
+import os
+
+def convert_coco_to_json(image_entry, data, output_folder):
+    # Extract the numerical part of the image name to use as the new name
+    new_name = image_entry["file_name"].split('_')[1].split('.')[0]
+
+    # Get the annotations for this image
+    annotations = [ann for ann in data["annotations"] if ann["image_id"] == image_entry["id"]]
+
+    # Create a new JSON structure for this image
+    converted_data = {
+        "version": "3.21.1",
+        "flags": {},
+        "shapes": [],
+        "lineColor": [0, 255, 0, 128],
+        "fillColor": [255, 0, 0, 128],
+        "imagePath": f"{new_name}.jpg",
+        "imageData": "",
+        "imageHeight": image_entry["height"],
+        "imageWidth": image_entry["width"]
+    }
+
+    for annotation in annotations:
+        # Convert COCO segmentation to points
+        segmentation = annotation["segmentation"][0]  # Assuming one polygon per annotation
+        points = [[segmentation[i], segmentation[i + 1]] for i in range(0, len(segmentation), 2)]
+
+        shape = {
+            "label": next((cat["name"] for cat in data["categories"] if cat["id"] == annotation["category_id"]), "unknown"),
+            "line_color": None,
+            "fill_color": None,
+            "points": points,
+            "shape_type": "polygon",
+            "flags": {}
+        }
+
+        converted_data["shapes"].append(shape)
+
+    # Save the converted data to a new JSON file
+    output_file = os.path.join(output_folder, f"{new_name}.json")
+    with open(output_file, "w") as f:
+        json.dump(converted_data, f, indent=4)
+
+    return output_file
+
+    # Load the original COCO annotations JSON file
+with open(r"write the path here") as f:
+    data = json.load(f)
+
+    # Set the output folder for the converted JSON files
+output_folder = r"write the path here"
+
+    # Generate annotations for all images
+converted_files = []
+for image_entry in data["images"]:
+    output_file = convert_coco_to_json(image_entry, data, output_folder)
+    if output_file:
+        converted_files.append(output_file)
+
+print(f"Converted JSON files created: {len(converted_files)}")
